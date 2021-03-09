@@ -26,9 +26,9 @@ public class WikibasePersonHandler {
         return wikibaseItemMono.log()
                 .flatMap(item -> {
                     try {
-                        return ( item.getFirstName() == null || item.getLastName() == null || item.getDateBirth() == null || item.getInstantOf() == null)
-                                ? ServerResponse.badRequest().build() :
-                                ServerResponse.ok()
+                        return ( item.getFirstName() == null || item.getLastName() == null || item.getDateBirth() == null || item.getInstantOf() == null )
+                                ? ServerResponse.badRequest().build()
+                                : ServerResponse.ok()
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(wikibaseDataService.save(item), WikibaseItem.class)
                             .switchIfEmpty(ServerResponse.notFound().build())
