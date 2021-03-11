@@ -15,6 +15,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class CreateWikibaseItemTest {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
             LocalDateTime now = LocalDateTime.parse("1986-04-08T00:00");
 
-            DataTime dataTime = new DataTime(dtf.format(now));
+            DataTime dataTime = new DataTime(dtf.format(now), 11);
             ObjectMapper objectMapper = new ObjectMapper();
 
             String jsonString = objectMapper.writeValueAsString(dataTime);
@@ -124,6 +125,18 @@ public class CreateWikibaseItemTest {
 
     private String getCsrfToken(String urlWikibase) {
         return oAuthHttp.getCsrfToken(urlWikibase);
+    }
+
+    @Test
+    void dateTimeTest() {
+
+        String date = "1960-02-11"+"T00:00";
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
+        LocalDateTime now = LocalDateTime.parse(date);
+
+        DataTime dataTime = new DataTime(dtf.format(now), 11);
+
+        System.out.println(dataTime);
     }
 
 }

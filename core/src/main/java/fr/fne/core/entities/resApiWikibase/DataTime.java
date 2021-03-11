@@ -8,15 +8,15 @@ import lombok.*;
 public class DataTime {
 
     private String time ;
-    @NonNull
+
     private final int timezone = 0;
-    @NonNull
+
     private final int before = 0;
-    @NonNull
+
     private final int after = 0;
-    @NonNull
-    private final int precision = 11;
-    @NonNull
+
+    private int precision;
+
     private final String calendarmodel = "http://www.wikidata.org/entity/Q1985727";
 
 }

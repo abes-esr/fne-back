@@ -13,9 +13,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Dans cette classe on a mis en place un CRON avec le timestamp par défaut pour la liste de "recent change" dans Wikibase
@@ -44,6 +49,7 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 60 * 1000)
     public void launchAppCron() {
+
         log.info("************ The time is now {} ************", dateFormat.format(new Date()));
         log.info("************ Starting Application Scheduled ************");
 
@@ -54,48 +60,57 @@ public class ScheduledTasks {
 
         // Récupère la liste d'objet java => Recentchange
 
-        Flux<Recentchange> recentChangeList = getRecentChangeListToObject.toObjectReactive();
-        //List<Recentchange> recentChangeList = getRecentChangeListToObject.toObjectReactive().collectList().block();
+        Flux<Recentchange> recentChangeListFlux = getRecentChangeListToObject.toObjectReactive()
+                                                .sort(Comparator.comparing(Recentchange::getTimeStamp));
 
-        recentChangeList.subscribe(System.out::println);
+        recentChangeListFlux.subscribe(System.out::println);
 
-        recentChangeList.subscribe(t -> {
-            // On donne le Q item dans le lien
-            responseToAutorite.setItem(t.getTitle());
+        List<Recentchange> recentChangeList = recentChangeListFlux.collectList().block();
 
-            Autorite autorite = null;
-            try {
-                autorite = responseToAutorite.toObjectReactive();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println(autorite);
+        assert recentChangeList != null;
 
-            if (autorite != null && autorite.getIsNotice()) {
+        if (recentChangeList.isEmpty()) {
 
-                autoriteToString.setAutorite(autorite);
-                System.out.println(autoriteToString.convertAutoriteToString());
+            System.out.println("List of item is empty: Nothing to do");
 
-                // On regarde si le PPN existe ou non dans CBS avant de créer une nouvelle notice
-                if (!autorite.getExiste()) {
-                    // Si le PPN n'existe pas (non trouvé le zone 001 dans Wikibase ) , on va créer une nouvelle notice dans le CBS
-                    // Ensuite, on va récupérer le PPN retourné par le CBS afin de pouvoir l'insérer dans le Wikibase
+        } else {
 
-                    noticeService.createNotice(autoriteToString, t.getTitle());
-                } else {
-                    // Si le PPN a trouvé dans Wikibase: Essayer de mettre à jour la notice dans CBS
-                    noticeService.editNotice(autoriteToString, autorite.getPpn());
+            recentChangeList.forEach(t -> {
+                // On donne le Q item dans le lien
+                responseToAutorite.setItem(t.getTitle());
+
+                Autorite autorite = null;
+                try {
+                    autorite = responseToAutorite.toObjectReactive();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            }
+                System.out.println(autorite);
 
-        });
+                if (autorite != null && autorite.getIsNotice()) {
 
-        // Récuperer le temp dernier item dans la nouvelle liste recent change de Wikibase
-        this.timeStamp = recentChangeList.elementAt(0)
-                .map(v -> v.getTimeStamp().replaceAll("[-T:Z]", ""))
-                .block();
+                    autoriteToString.setAutorite(autorite);
+                    System.out.println(autoriteToString.convertAutoriteToString());
 
-        //this.timeStamp = recentChangeList.get(0).getTimeStamp().replaceAll("[-T:Z]", "");
+                    // On regarde si le PPN existe ou non dans CBS avant de créer une nouvelle notice
+                    if (!autorite.getExiste()) {
+                        // Si le PPN n'existe pas (non trouvé le zone 001 dans Wikibase ) , on va créer une nouvelle notice dans le CBS
+                        // Ensuite, on va récupérer le PPN retourné par le CBS afin de pouvoir l'insérer dans le Wikibase
+
+                        noticeService.createNotice(autoriteToString, t.getTitle());
+                    } else {
+                        // Si le PPN a trouvé dans Wikibase: Essayer de mettre à jour la notice dans CBS
+                        noticeService.editNotice(autoriteToString, autorite.getPpn());
+                    }
+                }
+                // Récuperer le temp dernier item dans la nouvelle liste recent change de Wikibase
+                this.timeStamp = t.getTimeStamp().replaceAll("[-T:Z]", "");
+            });
+        }
+
+        log.info("************ The time is now {} ************", dateFormat.format(new Date()));
+        log.info("************ End Application Scheduled ************");
+        log.info("************ Next item time set to {} ************", this.timeStamp);
 
     }
 

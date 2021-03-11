@@ -11,17 +11,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Cett classe contient toutes les actions avec Wikibase,
@@ -85,132 +82,132 @@ public class WikiDataServiceImpl implements WikibaseDataService {
         Mono<WikibaseItem> wikibaseItemMono = Mono.just(wikibaseItem);
 
         return wikibaseItemMono.flatMap(v -> {
-                            String value = titlteConvert(wikibaseItem);
-                            PropertyWikibaseValuefr propertyWikibaseValuefr = new PropertyWikibaseValuefr("fr", value);
-                            PropertyWikibaseValuefr propertyWikibaseValuefrDescription = new PropertyWikibaseValuefr("fr", v.getInstantOf());
+
+            String value = titlteConvert(wikibaseItem);
+            PropertyWikibaseValuefr propertyWikibaseValuefr = new PropertyWikibaseValuefr("fr", value);
+            PropertyWikibaseValuefr propertyWikibaseValuefrDescription = new PropertyWikibaseValuefr("fr", v.getInstantOf().strip());
+            try {
+                String jsonString = objectMapper.writeValueAsString(propertyWikibaseValuefr);
+                String jsonStringDescription = objectMapper.writeValueAsString(propertyWikibaseValuefrDescription);
+                params.put("action", "wbeditentity");
+                params.put("format", "json");
+                params.put("new", "item");
+                params.put("data", "{\"labels\":{\"fr\":"+jsonString+"},\"descriptions\":{\"fr\":"+jsonStringDescription+"}}");
+                params.put("token", token);
+
+                JsonNode json = oAuthHttp.httpOAuthPost(urlFneApi, params);
+                if (json.has("error")) {
+                    wikibaseItem.setStatus("Doublons");
+                    String doublonsMessage = json.findValue("info").asText();
+                    wikibaseItem.setItemId(doublonsMessage);
+                } else if (json.has("entity")) {
+                    wikibaseItem.setStatus("OK");
+                    wikibaseItem.setItemId(json.findValue("id").asText());
+                }
+
+                log.info("Réponse de WIKIBASE  ===> " + json.toString());
+                return Mono.just(wikibaseItem);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Mono.empty();
+            }
+
+        })
+        .map(v -> {
+
+            Scheduler singleThread = Schedulers.single();
+            if (v.getStatus().equals("OK")) {
+
+                if(v.getInstantOf() != null) {
+                    getPropertyName("Est une instance de", "property").publishOn(singleThread).subscribe(s -> {
+                        getPropertyName(v.getInstantOf().strip(), "item").publishOn(singleThread).subscribe(t -> {
                             try {
-                                String jsonString = objectMapper.writeValueAsString(propertyWikibaseValuefr);
-                                String jsonStringDescription = objectMapper.writeValueAsString(propertyWikibaseValuefrDescription);
-                                params.put("action", "wbeditentity");
-                                params.put("format", "json");
-                                params.put("new", "item");
-                                params.put("data", "{\"labels\":{\"fr\":"+jsonString+"},\"descriptions\":{\"fr\":"+jsonStringDescription+"}}");
-                                params.put("token", token);
-
-                                JsonNode json = oAuthHttp.httpOAuthPost(urlFneApi, params);
-                                if (json.has("error")) {
-                                    wikibaseItem.setStatus("Doublons");
-                                    String doublonsMessage = json.findValue("info").asText();
-                                    wikibaseItem.setItemId(doublonsMessage);
-                                } else if (json.has("entity")) {
-                                    wikibaseItem.setStatus("OK");
-                                    wikibaseItem.setItemId(json.findValue("id").asText());
-                                }
-
-                                log.info("Réponse de WIKIBASE  ===> " + json.toString());
-                                return Mono.just(wikibaseItem);
+                                createPropertyItem(v.getItemId().strip(), s.strip(), t.strip());
                             } catch (Exception e) {
                                 e.printStackTrace();
-                                return Mono.empty();
                             }
-
-                        })
-                        .map(v -> {
-
-                            Scheduler singleThread = Schedulers.single();
-                            if (v.getStatus().equals("OK")) {
-
-                                if(v.getInstantOf() != null) {
-                                    getPropertyName("Est une instance de", "property").publishOn(singleThread).subscribe(s -> {
-                                        getPropertyName(v.getInstantOf(), "item").publishOn(singleThread).subscribe(t -> {
-                                            try {
-                                                createPropertyItem(v.getItemId(), s, t);
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                        });
-                                    });
-                                }
-
-                                if(v.getFirstName() != null) {
-                                    getPropertyName("Nom", "property").publishOn(singleThread).subscribe(s -> {
-                                        try {
-                                            createProperty(wikibaseItem.getFirstName(), wikibaseItem.getItemId(), s);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-
-                                    });
-                                }
-
-                                if(v.getLastName() != null) {
-                                    getPropertyName("Prénom", "property").publishOn(singleThread).subscribe(s -> {
-                                        try {
-                                            createProperty(wikibaseItem.getLastName(), wikibaseItem.getItemId(), s);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    });
-                                }
-                                if(v.getDateBirth() != null) {
-                                    getPropertyName("Date de naissance", "property").publishOn(singleThread).subscribe(s -> {
-                                        try {
-                                            createPropertyTime(v.getDateBirth(), v.getItemId(), s);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    });
-                                }
-                                if(v.getDateDead() != null) {
-                                    getPropertyName("Date de décès", "property").publishOn(singleThread).subscribe(s -> {
-                                        try {
-                                            createPropertyTime(v.getDateDead(), v.getItemId(), s);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    });
-                                }
-
-                                if(v.getLangue() != null) {
-                                    getPropertyName("Langue de la personne", "property").publishOn(singleThread).subscribe(s -> {
-                                        getPropertyName(v.getLangue(), "item").publishOn(singleThread).subscribe(t -> {
-                                            try {
-                                                createPropertyItem(v.getItemId(), s, t);
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                        });
-                                    });
-                                }
-
-                                if(v.getCountry() != null) {
-                                    getPropertyName("Pays associé à la personne", "property").publishOn(singleThread).subscribe(s -> {
-                                        getPropertyName(v.getCountry(), "item").publishOn(singleThread).subscribe(t -> {
-                                            try {
-                                                createPropertyItem(v.getItemId(), s, t);
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                        });
-                                    });
-                                }
-
-                                if(v.getSource() != null) {
-                                    getPropertyName("Source", "property").publishOn(singleThread).subscribe(s -> {
-                                        try {
-                                            createProperty(wikibaseItem.getSource(), wikibaseItem.getItemId(), s);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-
-                                    });
-                                }
-
-                            }
-
-
-                            return v;
                         });
+                    });
+                }
+
+                if(v.getFirstName() != null) {
+                    getPropertyName("Nom", "property").publishOn(singleThread).subscribe(s -> {
+                        try {
+                            createProperty(wikibaseItem.getFirstName().strip(), wikibaseItem.getItemId().strip(), s.strip());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    });
+                }
+
+                if(v.getLastName() != null) {
+                    getPropertyName("Prénom", "property").publishOn(singleThread).subscribe(s -> {
+                        try {
+                            createProperty(wikibaseItem.getLastName().strip(), wikibaseItem.getItemId().strip(), s.strip());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+                if(v.getDateBirth() != null) {
+                    getPropertyName("Date de naissance", "property").publishOn(singleThread).subscribe(s -> {
+                        try {
+                            createPropertyTime(v.getDateBirth().strip(), v.getItemId().strip(), s.strip());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+                if(v.getDateDead() != null) {
+                    getPropertyName("Date de décès", "property").publishOn(singleThread).subscribe(s -> {
+                        try {
+                            createPropertyTime(v.getDateDead().strip(), v.getItemId().strip(), s.strip());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+
+                if(v.getLangue() != null) {
+                    getPropertyName("Langue de la personne", "property").publishOn(singleThread).subscribe(s -> {
+                        getPropertyName(v.getLangue().strip(), "item").publishOn(singleThread).subscribe(t -> {
+                            try {
+                                createPropertyItem(v.getItemId().strip(), s.strip(), t.strip());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    });
+                }
+
+                if(v.getCountry() != null) {
+                    getPropertyName("Pays associé à la personne", "property").publishOn(singleThread).subscribe(s -> {
+                        getPropertyName(v.getCountry().strip(), "item").publishOn(singleThread).subscribe(t -> {
+                            try {
+                                createPropertyItem(v.getItemId().strip(), s.strip(), t.strip());
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    });
+                }
+
+                if(v.getSource() != null) {
+                    getPropertyName("Source", "property").publishOn(singleThread).subscribe(s -> {
+                        try {
+                            createProperty(wikibaseItem.getSource().strip(), wikibaseItem.getItemId().strip(), s.strip());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    });
+                }
+
+            }
+
+            return v;
+        });
 
 
     }
@@ -230,8 +227,11 @@ public class WikiDataServiceImpl implements WikibaseDataService {
 
         return webClient.get().retrieve().bodyToMono(JsonNode.class)
                         .flatMap(v -> {
-                            if(v.findValue("success").asText().equals("1")) {
+                            if(v.findValue("success").asText().equals("1") && v.findValue("id") != null) {
                                 return Mono.just(v.findValue("id").asText());
+                            } else if (v.findValue("success").asText().equals("1") && v.findValue("id") == null) {
+                                log.info("Probleme indexation dans Wikibase pour l'item avec le nom "+ name);
+                                return Mono.empty();
                             } else {
                                 return Mono.empty();
                             }
@@ -258,11 +258,19 @@ public class WikiDataServiceImpl implements WikibaseDataService {
 
     private void createPropertyTime(String time, String itemId, String propertyId) {
         try {
+            String date = null;
+            DataTime dataTime;
+            if (time.length() > 4 ) {
+                date = "+"+time+"T00:00:00Z";
+                dataTime = new DataTime(date, 11);
+            } else {
+                date = "+"+time+"-00-00T00:00:00Z";
+                dataTime = new DataTime(date, 9);
+            }
+//            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
+//            LocalDateTime now = LocalDateTime.parse(date);
 
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
-            LocalDateTime now = LocalDateTime.parse(time+"T00:00");
 
-            DataTime dataTime = new DataTime(dtf.format(now));
             ObjectMapper objectMapper = new ObjectMapper();
 
             String jsonString = objectMapper.writeValueAsString(dataTime);
@@ -311,14 +319,14 @@ public class WikiDataServiceImpl implements WikibaseDataService {
 
         StringBuilder title = new StringBuilder();
 
-        title.append(wikibaseItem.getFirstName());
+        title.append(wikibaseItem.getFirstName().strip());
         title.append(", ");
-        title.append(wikibaseItem.getLastName());
+        title.append(wikibaseItem.getLastName().strip());
         title.append(" (");
-        title.append(wikibaseItem.getDateBirth(),0,4);
-        if (wikibaseItem.getDateDead() != null) {
+        title.append(wikibaseItem.getDateBirth().strip(),0,4);
+        if (StringUtils.hasText( wikibaseItem.getDateDead().strip() ) ) {
             title.append("-");
-            title.append(wikibaseItem.getDateDead(),0,4);
+            title.append(wikibaseItem.getDateDead().strip(),0,4);
 
         } else {
             title.append("-...");

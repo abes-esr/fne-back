@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.*;
@@ -136,8 +137,9 @@ public class ResponseToAutorite {
         Autorite autorite = new Autorite();
         List<Zone> zones = new ArrayList<>();
 
-        propertiesMapper(item).subscribe(v -> {
+        propertiesMapper(item).parallel().runOn(Schedulers.boundedElastic()).subscribe(v -> {
             System.out.println(v);
+            log.info("Subscriber on thread: " + Thread.currentThread().getName());
             Zone zone = new Zone();
             if (!v.getZoneNumber().equals("001")) {
                 zone.setZoneNumber(v.getZoneNumber());
@@ -194,7 +196,6 @@ public class ResponseToAutorite {
                 })
                 .filter(v -> !v.getDatatype().equals("wikibase-item"))
                 .flatMap(v -> getPropertyName(v.getProperty(), v));
-
 
     }
 

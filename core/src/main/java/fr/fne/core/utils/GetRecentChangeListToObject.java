@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -95,8 +96,11 @@ public class GetRecentChangeListToObject {
                     }
                 })
                 .flatMapMany(Flux::fromIterable)
-                .filter(v -> v.getTitle().startsWith("Item"))
-                .map(v -> new Recentchange(v.getTitle().split(":")[1], v.getTimestamp()));
+                .parallel()
+                .runOn(Schedulers.boundedElastic())
+                .sequential()
+                .filter(v -> v.getTitle().startsWith("Item") )
+                .map(v -> new Recentchange(v.getTitle().split(":")[1], v.getTimestamp()) );
 
     }
 }
