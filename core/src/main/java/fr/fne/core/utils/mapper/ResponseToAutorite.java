@@ -137,37 +137,43 @@ public class ResponseToAutorite {
         Autorite autorite = new Autorite();
         List<Zone> zones = new ArrayList<>();
 
-        propertiesMapper(item).parallel().runOn(Schedulers.boundedElastic()).subscribe(v -> {
-            System.out.println(v);
-            log.info("Subscriber on thread: " + Thread.currentThread().getName());
-            Zone zone = new Zone();
-            if (!v.getZoneNumber().equals("001")) {
-                zone.setZoneNumber(v.getZoneNumber());
-                zone.setSubZones(v.getDatavalueWikibase().getId());
-                zone.setTag("##");
-                zones.add(zone);
-            } else {
-                autorite.setExiste(true);
-                autorite.setPpn(v.getDatavalueWikibase().getId());
-            }
-            if (v.getZoneNumber().startsWith("200")) {
-                autorite.setIsNotice(true);
-            }
+        propertiesMapper(item).parallel().runOn(Schedulers.boundedElastic())
+                .map(v -> {
+                    System.out.println(v);
+                    Zone zone = new Zone();
+                    if (!v.getZoneNumber().equals("001")) {
+                        zone.setZoneNumber(v.getZoneNumber());
+                        zone.setSubZones(v.getDatavalueWikibase().getId());
+                        zone.setTag("##");
+                        zones.add(zone);
+                    } else {
+                        autorite.setExiste(true);
+                        autorite.setPpn(v.getDatavalueWikibase().getId());
+                    }
+                    if (v.getZoneNumber().startsWith("200")) {
+                        autorite.setIsNotice(true);
+                    }
+                    return v;
+                }
+                )
+                .sequential()
+                .doOnComplete(() -> {
+                    Zone zone = addNewZoneWith200f(zones);
+                    zones.add(zone);
+                    if (autorite.getIsNotice()) {
+                        List<Zone> sortedList = zones.stream()
+                                //.sorted(Comparator.comparing(Zone::getPos))
+                                .sorted(Comparator.comparing(Zone::getZoneNumber))
+                                .collect(Collectors.toList());
 
-        }, e -> log.error(e.getMessage()), countDownLatch::countDown);
+                        autorite.setZones(sortedList);
+                    }
+                })
+                .subscribe(v -> log.info("Subscriber on thread: " + Thread.currentThread().getName()),
+                        e -> log.error(e.getMessage()),
+                        countDownLatch::countDown);
 
         countDownLatch.await();
-
-        Zone zone = addNewZoneWith200f(zones);
-        zones.add(zone);
-        if (autorite.getIsNotice()) {
-            List<Zone> sortedList = zones.stream()
-                    //.sorted(Comparator.comparing(Zone::getPos))
-                    .sorted(Comparator.comparing(Zone::getZoneNumber))
-                    .collect(Collectors.toList());
-
-            autorite.setZones(sortedList);
-        }
         return autorite;
     }
 

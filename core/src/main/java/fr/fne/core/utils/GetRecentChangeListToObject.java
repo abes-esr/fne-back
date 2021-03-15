@@ -98,9 +98,9 @@ public class GetRecentChangeListToObject {
                 .flatMapMany(Flux::fromIterable)
                 .parallel()
                 .runOn(Schedulers.boundedElastic())
-                .sequential()
                 .filter(v -> v.getTitle().startsWith("Item") )
-                .map(v -> new Recentchange(v.getTitle().split(":")[1], v.getTimestamp()) );
+                .map(v -> new Recentchange(v.getTitle().split(":")[1], v.getTimestamp()) )
+                .sequential();
 
     }
 }

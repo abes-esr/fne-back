@@ -47,11 +47,14 @@ public class ScheduledTasks {
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
-    @Scheduled(fixedRate = 60 * 1000)
-    public void launchAppCron() {
+    @Scheduled(fixedDelay = 60 * 1000)
+    public void launchAppCron() throws InterruptedException {
 
-        log.info("************ The time is now {} ************", dateFormat.format(new Date()));
-        log.info("************ Starting Application Scheduled ************");
+        log.warn("************ The time is now {} ************", dateFormat.format(new Date()));
+        log.warn("************ Starting Application Scheduled ************");
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
 
         System.out.println("============ Get all items in page recent change of Wikibase =================");
         // Donner le temps pour la liste "recent change" dans wikibase
@@ -65,52 +68,91 @@ public class ScheduledTasks {
 
         recentChangeListFlux.subscribe(System.out::println);
 
-        List<Recentchange> recentChangeList = recentChangeListFlux.collectList().block();
+        recentChangeListFlux.switchIfEmpty(v -> {
+                    countDownLatch.countDown();
+                    System.out.println("List of item is empty: Nothing to do");
+                })
+                .subscribe(t -> {
+                    // On donne le Q item dans le lien
+                    responseToAutorite.setItem(t.getTitle());
 
-        assert recentChangeList != null;
-
-        if (recentChangeList.isEmpty()) {
-
-            System.out.println("List of item is empty: Nothing to do");
-
-        } else {
-
-            recentChangeList.forEach(t -> {
-                // On donne le Q item dans le lien
-                responseToAutorite.setItem(t.getTitle());
-
-                Autorite autorite = null;
-                try {
-                    autorite = responseToAutorite.toObjectReactive();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println(autorite);
-
-                if (autorite != null && autorite.getIsNotice()) {
-
-                    autoriteToString.setAutorite(autorite);
-                    System.out.println(autoriteToString.convertAutoriteToString());
-
-                    // On regarde si le PPN existe ou non dans CBS avant de créer une nouvelle notice
-                    if (!autorite.getExiste()) {
-                        // Si le PPN n'existe pas (non trouvé le zone 001 dans Wikibase ) , on va créer une nouvelle notice dans le CBS
-                        // Ensuite, on va récupérer le PPN retourné par le CBS afin de pouvoir l'insérer dans le Wikibase
-
-                        noticeService.createNotice(autoriteToString, t.getTitle());
-                    } else {
-                        // Si le PPN a trouvé dans Wikibase: Essayer de mettre à jour la notice dans CBS
-                        noticeService.editNotice(autoriteToString, autorite.getPpn());
+                    Autorite autorite = null;
+                    try {
+                        autorite = responseToAutorite.toObjectReactive();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                }
-                // Récuperer le temp dernier item dans la nouvelle liste recent change de Wikibase
-                this.timeStamp = t.getTimeStamp().replaceAll("[-T:Z]", "");
-            });
-        }
+                    System.out.println(autorite);
 
-        log.info("************ The time is now {} ************", dateFormat.format(new Date()));
-        log.info("************ End Application Scheduled ************");
-        log.info("************ Next item time set to {} ************", this.timeStamp);
+                    if (autorite != null && autorite.getIsNotice()) {
+
+                        autoriteToString.setAutorite(autorite);
+                        System.out.println(autoriteToString.convertAutoriteToString());
+
+                        // On regarde si le PPN existe ou non dans CBS avant de créer une nouvelle notice
+                        if (!autorite.getExiste()) {
+                            // Si le PPN n'existe pas (non trouvé le zone 001 dans Wikibase ) , on va créer une nouvelle notice dans le CBS
+                            // Ensuite, on va récupérer le PPN retourné par le CBS afin de pouvoir l'insérer dans le Wikibase
+
+                            noticeService.createNotice(autoriteToString, t.getTitle());
+                        } else {
+                            // Si le PPN a trouvé dans Wikibase: Essayer de mettre à jour la notice dans CBS
+                            noticeService.editNotice(autoriteToString, autorite.getPpn());
+                        }
+                    }
+                    // Récuperer le temp dernier item dans la nouvelle liste recent change de Wikibase
+                    this.timeStamp = t.getTimeStamp().replaceAll("[-T:Z]", "");
+                }, err -> log.error(err.getMessage()), countDownLatch::countDown
+                );
+
+        countDownLatch.await();
+
+//        List<Recentchange> recentChangeList = recentChangeListFlux.collectList().block();
+//
+//        assert recentChangeList != null;
+//
+//        if (recentChangeList.isEmpty()) {
+//
+//            System.out.println("List of item is empty: Nothing to do");
+//
+//        } else {
+//
+//            recentChangeList.forEach(t -> {
+//                // On donne le Q item dans le lien
+//                responseToAutorite.setItem(t.getTitle());
+//
+//                Autorite autorite = null;
+//                try {
+//                    autorite = responseToAutorite.toObjectReactive();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                System.out.println(autorite);
+//
+//                if (autorite != null && autorite.getIsNotice()) {
+//
+//                    autoriteToString.setAutorite(autorite);
+//                    System.out.println(autoriteToString.convertAutoriteToString());
+//
+//                    // On regarde si le PPN existe ou non dans CBS avant de créer une nouvelle notice
+//                    if (!autorite.getExiste()) {
+//                        // Si le PPN n'existe pas (non trouvé le zone 001 dans Wikibase ) , on va créer une nouvelle notice dans le CBS
+//                        // Ensuite, on va récupérer le PPN retourné par le CBS afin de pouvoir l'insérer dans le Wikibase
+//
+//                        noticeService.createNotice(autoriteToString, t.getTitle());
+//                    } else {
+//                        // Si le PPN a trouvé dans Wikibase: Essayer de mettre à jour la notice dans CBS
+//                        noticeService.editNotice(autoriteToString, autorite.getPpn());
+//                    }
+//                }
+//                // Récuperer le temp dernier item dans la nouvelle liste recent change de Wikibase
+//                this.timeStamp = t.getTimeStamp().replaceAll("[-T:Z]", "");
+//            });
+//        }
+
+        log.warn("************ The time is now {} ************", dateFormat.format(new Date()));
+        log.warn("************ End Application Scheduled ************");
+        log.warn("************ Next item time set to {} ************", this.timeStamp);
 
     }
 
