@@ -10,6 +10,12 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
+/**
+ * Cette class utilise pour creer les nouveau Item dans Wikibase
+ * Utiliser dan l'objet labels et description
+ * data={"labels":{"en-gb":{"language":"en-gb","value":"Propertylabel"}},"descriptions":{"en-gb":{"language":"en-gb","value":"Propertydescription"}},"datatype":"string"}
+ * plus info : http://fne-test.abes.fr/w/api.php?action=help&modules=wbeditentity
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

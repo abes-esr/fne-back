@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.fne.core.config.BeanConfigurationCore;
 import fr.fne.core.config.WikibaseProperties;
 import fr.fne.core.entities.Autorite;
-import fr.fne.core.entities.resApiWikibase.JsonObjectWikibase;
 import fr.fne.core.entities.resApiWikibase.MainsnakWikibase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,23 +35,6 @@ public class WebclientObjectTest {
     WikibaseProperties wikibaseProperties;
     @Autowired
     WebClient.Builder webClientBuilder;
-
-
-    @Test
-    void getListMainSnakFromWiki() throws InterruptedException {
-
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-
-        String url = this.uriProperty + "Q8";
-        WebClient webClient = webClientBuilder.baseUrl(url).build();
-
-        webClient.get().accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToFlux(JsonObjectWikibase.class)
-                .subscribe(System.out::println, null, countDownLatch::countDown);
-
-        countDownLatch.await();
-    }
 
     @Test
     void getPropertiesList() throws InterruptedException {

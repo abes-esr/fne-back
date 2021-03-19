@@ -11,7 +11,11 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
-
+/**
+ * Cette classe utilise pour récuperer la Datavalue dans chaque Property d'un Item Wikibase
+ * Plus info : http://fne-test.abes.fr/w/api.php?action=wbgetclaims&format=json&entity=Q8
+ * Il dépende de chaque type de Datavalue dans Wikibase (String , wikibase-entityid ou time)
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -2,6 +2,10 @@ package fr.fne.core.entities.resApiWikibase;
 
 import lombok.*;
 
+/**
+ * Cette classe utilise pour envoyer un object de type Time dans Wikibase
+ * lors de la création d'un nouveau Item ou Property dans Wikibase
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
