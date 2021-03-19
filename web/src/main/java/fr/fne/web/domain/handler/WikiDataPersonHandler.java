@@ -1,8 +1,8 @@
 package fr.fne.web.domain.handler;
 
-import fr.fne.services.domain.WikibaseDataService;
+import fr.fne.services.domain.WikiDataServicePersonNotice;
 import fr.fne.services.domain.entities.WikibaseCountries;
-import fr.fne.services.domain.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikiDataPersonNotice;
 import fr.fne.services.domain.entities.WikibaseLangues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +16,14 @@ import reactor.core.publisher.Mono;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class WikibasePersonHandler {
+public class WikiDataPersonHandler {
 
-    private final WikibaseDataService wikibaseDataService;
+    private final WikiDataServicePersonNotice wikiDataServicePersonNotice;
 
     @NonNull
     public Mono<ServerResponse> createWikiBaseItem(ServerRequest serverRequest) {
 
-        Mono<WikibaseItem> wikibaseItemMono = serverRequest.bodyToMono(WikibaseItem.class);
+        Mono<WikiDataPersonNotice> wikibaseItemMono = serverRequest.bodyToMono(WikiDataPersonNotice.class);
 
         return wikibaseItemMono.log()
                 .flatMap(item -> {
@@ -32,7 +32,7 @@ public class WikibasePersonHandler {
                                 ? ServerResponse.badRequest().build()
                                 : ServerResponse.ok()
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body(wikibaseDataService.save(item), WikibaseItem.class)
+                            .body(wikiDataServicePersonNotice.save(item), WikiDataPersonNotice.class)
                             .switchIfEmpty(ServerResponse.notFound().build())
                             .onErrorResume(e -> ServerResponse.badRequest().build() );
                     } catch (Exception e) {
@@ -49,7 +49,7 @@ public class WikibasePersonHandler {
 
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(wikibaseDataService.findAllLangues(), WikibaseLangues.class);
+                .body(wikiDataServicePersonNotice.findAllLangues(), WikibaseLangues.class);
 
     }
 
@@ -58,6 +58,6 @@ public class WikibasePersonHandler {
 
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(wikibaseDataService.findAllCountries(), WikibaseCountries.class);
+                .body(wikiDataServicePersonNotice.findAllCountries(), WikibaseCountries.class);
     }
 }

@@ -250,7 +250,6 @@ public class WebclientObjectTest {
 
     }
 
-    // Todo
     private Mono<MainsnakWikibase> getPropertyName(String propertyValue, MainsnakWikibase mainsnakWikibase) {
 
         String url = this.uriPropertyValue + propertyValue;

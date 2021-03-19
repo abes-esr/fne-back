@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.fne.core.entities.resApiWikibase.DataTime;
 import fr.fne.core.entities.resApiWikibase.PropertyWikibaseValuefr;
 import fr.fne.core.utils.OAuthHttp;
-import fr.fne.services.domain.WikibaseDataService;
+import fr.fne.services.domain.WikiDataServicePersonNotice;
 import fr.fne.services.domain.entities.WikibaseCountries;
-import fr.fne.services.domain.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikiDataPersonNotice;
 import fr.fne.services.domain.entities.WikibaseLangues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -34,7 +33,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @Service
-public class WikiDataServiceImpl implements WikibaseDataService {
+public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNotice {
 
     @Value("${wikibase.urls.fne}")
     private String urlFneApi;
@@ -81,13 +80,13 @@ public class WikiDataServiceImpl implements WikibaseDataService {
     }
 
     @Override
-    public Mono<WikibaseItem> save(WikibaseItem wikibaseItem) throws Exception {
+    public Mono<WikiDataPersonNotice> save(WikiDataPersonNotice wikibaseItem) throws Exception {
 
         Map<String, String> params = new LinkedHashMap<>();
         String token = getCsrfToken(urlFneApi);
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Mono<WikibaseItem> wikibaseItemMono = Mono.just(wikibaseItem);
+        Mono<WikiDataPersonNotice> wikibaseItemMono = Mono.just(wikibaseItem);
 
         return wikibaseItemMono.flatMap(v -> {
 
@@ -390,7 +389,7 @@ public class WikiDataServiceImpl implements WikibaseDataService {
         }
     }
 
-    private String titlteConvert(WikibaseItem wikibaseItem) {
+    private String titlteConvert(WikiDataPersonNotice wikibaseItem) {
 
         StringBuilder title = new StringBuilder();
 

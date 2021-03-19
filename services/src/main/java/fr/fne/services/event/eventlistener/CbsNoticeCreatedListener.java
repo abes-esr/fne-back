@@ -1,6 +1,6 @@
 package fr.fne.services.event.eventlistener;
 
-import fr.fne.services.domain.WikibaseDataService;
+import fr.fne.services.domain.WikiDataServicePersonNotice;
 import fr.fne.services.event.entities.CbsNoticeCreated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class CbsNoticeCreatedListener {
     @Value("${wikibase.urls.fne}")
     private String urlWikiBase;
 
-    private final WikibaseDataService wikibaseDataService;
+    private final WikiDataServicePersonNotice wikibaseDataService;
 
 
     @EventListener

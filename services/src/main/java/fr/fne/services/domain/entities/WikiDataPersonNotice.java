@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class WikibaseItem {
+public class WikiDataPersonNotice {
 
     private String status;
     private String itemId;
