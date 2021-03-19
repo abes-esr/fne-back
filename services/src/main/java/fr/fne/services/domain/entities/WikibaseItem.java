@@ -1,4 +1,4 @@
-package fr.fne.services.event.entities;
+package fr.fne.services.domain.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

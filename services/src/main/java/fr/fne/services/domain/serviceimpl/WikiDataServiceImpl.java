@@ -6,18 +6,24 @@ import fr.fne.core.entities.resApiWikibase.DataTime;
 import fr.fne.core.entities.resApiWikibase.PropertyWikibaseValuefr;
 import fr.fne.core.utils.OAuthHttp;
 import fr.fne.services.domain.WikibaseDataService;
-import fr.fne.services.event.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikibaseCountries;
+import fr.fne.services.domain.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikibaseLangues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,6 +42,8 @@ public class WikiDataServiceImpl implements WikibaseDataService {
     private String propertySearch;
     @Value("${wikibase.urls.item-search}")
     private String itemSearch;
+    @Value("${wikibase.urls.sparql}")
+    private String urlsSparql;
 
 
     private final WebClient.Builder webClientBuilder;
@@ -150,7 +158,7 @@ public class WikiDataServiceImpl implements WikibaseDataService {
                         }
                     });
                 }
-                if(v.getDateBirth() != null) {
+                if(v.getDateBirth() != null && !v.getDateBirth().equals("")) {
                     getPropertyName("Date de naissance", "property").publishOn(singleThread).subscribe(s -> {
                         try {
                             createPropertyTime(v.getDateBirth().strip(), v.getItemId().strip(), s.strip());
@@ -159,7 +167,8 @@ public class WikiDataServiceImpl implements WikibaseDataService {
                         }
                     });
                 }
-                if(v.getDateDead() != null) {
+
+                if(v.getDateDead() != null && !v.getDateDead().equals("")) {
                     getPropertyName("Date de décès", "property").publishOn(singleThread).subscribe(s -> {
                         try {
                             createPropertyTime(v.getDateDead().strip(), v.getItemId().strip(), s.strip());
@@ -210,6 +219,72 @@ public class WikiDataServiceImpl implements WikibaseDataService {
         });
 
 
+    }
+
+    @Override
+    public Flux<WikibaseLangues> findAllLangues() {
+
+        WebClient webClient = webClientBuilder.baseUrl(urlsSparql).build();
+        String queryLangues = "SELECT ?item ?itemLabel\n" +
+                "WHERE \n" +
+                "{\n" +
+                "  ?item wdt:P1 wd:Q6.\n" +
+                "  ?item wdt:P13 ?b.\n" +
+                "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE],fr\". }\n" +
+                "}";
+
+        List<WikibaseLangues> wikibaseLanguesList = new ArrayList<>();
+        return webClient.get()
+                .uri(builder -> builder
+                        .path("/proxy/wdqs/bigdata/namespace/wdq/sparql")
+                        .queryParam("query", "{queryLangues}")
+                        .queryParam("format", "json")
+                        .build(queryLangues)
+                )
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .flatMap(v -> {
+                    for (JsonNode j: v.findValue("bindings")) {
+                        WikibaseLangues wikibaseLangues = new WikibaseLangues();
+                        wikibaseLangues.setLangueName(j.findValue("itemLabel").findValue("value").asText());
+                        wikibaseLanguesList.add(wikibaseLangues);
+                    }
+                    return Mono.just(wikibaseLanguesList);
+                })
+                .flatMapMany(Flux::fromIterable);
+    }
+
+    @Override
+    public Flux<WikibaseCountries> findAllCountries() {
+
+        WebClient webClient = webClientBuilder.baseUrl(urlsSparql).build();
+        String queryCountries = "SELECT ?item ?itemLabel\n" +
+                "WHERE \n" +
+                "{\n" +
+                "  ?item wdt:P1 wd:Q6.\n" +
+                "  ?item wdt:P14 ?b.\n" +
+                "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"[AUTO_LANGUAGE],fr\". }\n" +
+                "}";
+
+        List<WikibaseCountries> wikibaseCountriesList = new ArrayList<>();
+        return webClient.get()
+                .uri(builder -> builder
+                        .path("/proxy/wdqs/bigdata/namespace/wdq/sparql")
+                        .queryParam("query", "{queryCountries}")
+                        .queryParam("format", "json")
+                        .build(queryCountries)
+                )
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .flatMap(v -> {
+                    for (JsonNode j: v.findValue("bindings")) {
+                        WikibaseCountries wikibaseCountries = new WikibaseCountries();
+                        wikibaseCountries.setCountryName(j.findValue("itemLabel").findValue("value").asText());
+                        wikibaseCountriesList.add(wikibaseCountries);
+                    }
+                    return Mono.just(wikibaseCountriesList);
+                })
+                .flatMapMany(Flux::fromIterable);
     }
 
     private Mono<String> getPropertyName(String name, String type) {

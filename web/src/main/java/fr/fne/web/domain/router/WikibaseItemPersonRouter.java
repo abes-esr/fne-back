@@ -10,8 +10,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
 @Configuration
 public class WikibaseItemPersonRouter {
@@ -23,7 +22,15 @@ public class WikibaseItemPersonRouter {
                POST("/api/wiki/person")
                .and(accept(MediaType.APPLICATION_JSON)),
                wikiItemHandler::createWikiBaseItem
-       );
+        ).andRoute(
+                GET("/api/wiki/person/langues")
+                       .and(accept(MediaType.APPLICATION_JSON)),
+               wikiItemHandler::getPersonLangues
+       ).andRoute(
+                GET("/api/wiki/person/countries")
+                        .and(accept(MediaType.APPLICATION_JSON)),
+                wikiItemHandler::getPersonCountries
+        );
 
     }
 }

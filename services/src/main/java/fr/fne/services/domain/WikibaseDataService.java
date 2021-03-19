@@ -1,7 +1,9 @@
 package fr.fne.services.domain;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import fr.fne.services.event.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikibaseCountries;
+import fr.fne.services.domain.entities.WikibaseItem;
+import fr.fne.services.domain.entities.WikibaseLangues;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface WikibaseDataService {
@@ -10,4 +12,6 @@ public interface WikibaseDataService {
 
     String getCsrfToken(String urlWikibase);
     Mono<WikibaseItem> save(WikibaseItem wikibaseItem) throws Exception;
+    Flux<WikibaseLangues> findAllLangues();
+    Flux<WikibaseCountries> findAllCountries();
 }
