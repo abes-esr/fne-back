@@ -101,6 +101,5 @@ public class GetRecentChangeListToObject {
                 .filter(v -> v.getTitle().startsWith("Item") )
                 .map(v -> new Recentchange(v.getTitle().split(":")[1], v.getTimestamp()) )
                 .sequential();
-
     }
 }

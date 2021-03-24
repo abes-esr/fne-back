@@ -1,5 +1,6 @@
 package fr.fne.services.domain;
 
+import fr.fne.services.domain.entities.WikiDataSearchItem;
 import fr.fne.services.domain.entities.WikibaseCountries;
 import fr.fne.services.domain.entities.WikiDataPersonNotice;
 import fr.fne.services.domain.entities.WikibaseLangues;

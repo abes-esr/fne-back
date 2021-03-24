@@ -15,7 +15,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 public class WikiDataPersonRouter {
 
     @Bean
-    public RouterFunction<ServerResponse> route(WikiDataPersonHandler handler) {
+    public RouterFunction<ServerResponse> routePersonNotice(WikiDataPersonHandler handler) {
 
        return RouterFunctions.route(
                POST("/api/wiki/person")

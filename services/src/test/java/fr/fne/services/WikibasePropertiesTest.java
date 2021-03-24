@@ -2,7 +2,7 @@ package fr.fne.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.fne.core.config.WikibaseProperties;
-import fr.fne.services.domain.entities.WikibaseLangues;
+import fr.fne.services.domain.entities.*;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +25,13 @@ import java.util.concurrent.CountDownLatch;
 @SpringBootTest
 class WikibasePropertiesTest {
 
+
     @Autowired
     private WikibaseProperties wikibaseProperties;
     @Autowired
     WebClient.Builder webClientBuilder;
+    @Value("${wikibase.urls.cirrus-search}")
+    private String itemSearch;
 
     @Test
     public void whenYamlFileProvided() {
@@ -70,6 +75,26 @@ class WikibasePropertiesTest {
             .subscribe(System.out::println, System.out::println, countDownLatch::countDown);
         countDownLatch.await();
 
+    }
+
+    @Test
+    void searchItemInWikibase() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        WebClient webClient = webClientBuilder.baseUrl(itemSearch+"alle"+"*+hasdescription:fr").build();
+
+        System.out.println(itemSearch+"alle"+"*+hasdescription:fr");
+
+        webClient.get().retrieve()
+                .bodyToMono(WikiDataQuerySearch.class)
+                .flatMap(v -> Mono.just(v.getQuery().getWikiDataSearchItemList()))
+                .flatMapMany(Flux::fromIterable)
+                .parallel().runOn(Schedulers.boundedElastic())
+                .subscribe(v -> {
+                    System.out.println("Subscriber on thread: " + Thread.currentThread().getName());
+                    System.out.println(v);
+                    }, System.out::println, countDownLatch::countDown);
+
+        countDownLatch.await();
     }
 
 }
