@@ -3,6 +3,7 @@ package fr.fne.services;
 import fr.fne.services.oauth.OauthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -11,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = {"fr.fne.core", "fr.fne.services"})
 @Slf4j
-//@EnableScheduling
+@EnableScheduling
 @EnableAsync
 public class BackApplication {
 
@@ -28,6 +29,6 @@ public class BackApplication {
 	public void run(String... args) throws Exception {
 		oauthService.go2();
 	}
+*/
 
- */
 }
