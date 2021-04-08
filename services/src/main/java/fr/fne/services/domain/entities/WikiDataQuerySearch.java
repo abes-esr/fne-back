@@ -17,4 +17,5 @@ import java.util.List;
 public class WikiDataQuerySearch {
 
     private WikiDataSearch query;
+    private String error;
 }

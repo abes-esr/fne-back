@@ -15,6 +15,7 @@ public class Zone {
     private int pos;
     private String tag;
     private String subZones;
+    private String label;
 
 
 }

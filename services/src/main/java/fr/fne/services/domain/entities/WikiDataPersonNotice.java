@@ -3,6 +3,7 @@ package fr.fne.services.domain.entities;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import reactor.core.publisher.Mono;
 
 
 @Data
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class WikiDataPersonNotice {
 
     private String status;
+    private String ppn;
     private String itemId;
     private String instantOf;
     private String firstName;

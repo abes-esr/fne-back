@@ -21,6 +21,7 @@ public class MainsnakWikibase {
     private String PropertyName;
     private String property;
     private String datatype;
+    private String snaktype;
     @JsonProperty("datavalue")
     private DatavalueWikibase datavalueWikibase;
 

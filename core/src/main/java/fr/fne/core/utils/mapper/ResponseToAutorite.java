@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -53,6 +54,12 @@ public class ResponseToAutorite {
                     System.out.println(v);
                     Zone zone = new Zone();
                     if (!v.getZoneNumber().equals("001")) {
+                        if(wikibaseProperties.getLabels().containsKey(v.getPropertyName()))
+                        {
+                            zone.setLabel(wikibaseProperties.getLabels().get(v.getPropertyName()));
+                        } else {
+                            zone.setLabel(v.getPropertyName());
+                        }
                         zone.setZoneNumber(v.getZoneNumber());
                         zone.setSubZones(v.getDatavalueWikibase().getId());
                         zone.setTag("##");
@@ -80,6 +87,7 @@ public class ResponseToAutorite {
                         autorite.setZones(sortedList);
                     }
                 })
+                .onErrorResume(e -> Flux.empty())
                 .subscribe(v -> log.info("Subscriber on thread: " + Thread.currentThread().getName()),
                         e -> log.error(e.getMessage()),
                         countDownLatch::countDown);
@@ -88,14 +96,16 @@ public class ResponseToAutorite {
         return autorite;
     }
 
-    private Flux<MainsnakWikibase> propertiesMapper(String item) {
+    public Flux<MainsnakWikibase> propertiesMapper(String item) {
 
         List<String> properties = new ArrayList<>();
         String url = this.uriProperty + item;
         WebClient webClient = webClientBuilder.baseUrl(url).build();
 
         return webClient.get().retrieve()
+                .onStatus(HttpStatus::is4xxClientError, response -> Mono.empty())
                 .bodyToMono(JsonNode.class)
+                .onErrorResume(e -> Mono.empty())
                 .map(v -> v.findValue("claims"))
                 .map(v -> {
                     for (JsonNode j : v) {
@@ -112,8 +122,8 @@ public class ResponseToAutorite {
                     return Flux.empty();
                 })
                 .filter(v -> !v.getDatatype().equals("wikibase-item"))
-                .flatMap(v -> getPropertyName(v.getProperty(), v));
-
+                .flatMap(v -> getPropertyName(v.getProperty(), v))
+                .onErrorResume(e -> Flux.empty());
     }
 
 
@@ -124,6 +134,7 @@ public class ResponseToAutorite {
         WebClient webClient = webClientBuilder.baseUrl(url).build();
 
         return webClient.get().retrieve()
+                .onStatus(HttpStatus::is4xxClientError, response -> Mono.empty())
                 .bodyToMono(JsonNode.class)
                 .map(v -> v.findValue("mainsnak"))
                 .map(s -> {
@@ -134,7 +145,8 @@ public class ResponseToAutorite {
                         e.printStackTrace();
                         return new MainsnakWikibase();
                     }
-                });
+                })
+                .onErrorResume(e -> Mono.empty());
 
     }
 
@@ -144,6 +156,7 @@ public class ResponseToAutorite {
         WebClient webClient = webClientBuilder.baseUrl(url).build();
 
         return webClient.get().retrieve()
+                .onStatus(HttpStatus::is4xxClientError, response -> Mono.empty())
                 .bodyToMono(JsonNode.class)
                 .map(v -> v.findValue("fr"))
                 .map(s -> {
@@ -154,7 +167,8 @@ public class ResponseToAutorite {
                         mainsnakWikibase.setZoneNumber(pTag);
                     }
                     return mainsnakWikibase;
-                });
+                })
+                .onErrorResume(e -> Mono.empty());
     }
 
 

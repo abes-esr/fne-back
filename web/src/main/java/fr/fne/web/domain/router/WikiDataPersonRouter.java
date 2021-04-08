@@ -18,18 +18,26 @@ public class WikiDataPersonRouter {
     public RouterFunction<ServerResponse> routePersonNotice(WikiDataPersonHandler handler) {
 
        return RouterFunctions.route(
-               POST("/api/wiki/person")
+           POST("/api/wiki/person")
                .and(accept(MediaType.APPLICATION_JSON)),
                handler::createWikiBaseItem
-        ).andRoute(
-                GET("/api/wiki/person/langues")
-                       .and(accept(MediaType.APPLICATION_JSON)),
-               handler::getPersonLangues
        ).andRoute(
-                GET("/api/wiki/person/countries")
-                        .and(accept(MediaType.APPLICATION_JSON)),
+               PUT("/api/wiki/person")
+                       .and(accept(MediaType.APPLICATION_JSON)),
+               handler::updateWikiBaseItem
+       ).andRoute(
+            GET("/api/wiki/person/langues")
+               .and(accept(MediaType.APPLICATION_JSON)),
+                handler::getPersonLangues
+       ).andRoute(
+            GET("/api/wiki/person/countries")
+                .and(accept(MediaType.APPLICATION_JSON)),
                 handler::getPersonCountries
-        );
+       ).andRoute(
+           GET("/api/wiki/person/item/{term}")
+               .and(accept(MediaType.APPLICATION_JSON)),
+                handler::getPersonByItemId
+       );
 
     }
 }

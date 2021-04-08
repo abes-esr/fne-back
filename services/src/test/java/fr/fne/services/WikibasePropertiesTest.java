@@ -2,6 +2,8 @@ package fr.fne.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.fne.core.config.WikibaseProperties;
+import fr.fne.core.entities.Autorite;
+import fr.fne.core.utils.mapper.ResponseToAutorite;
 import fr.fne.services.domain.entities.*;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -9,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 class WikibasePropertiesTest {
@@ -30,8 +34,12 @@ class WikibasePropertiesTest {
     private WikibaseProperties wikibaseProperties;
     @Autowired
     WebClient.Builder webClientBuilder;
+    @Autowired
+    private ResponseToAutorite responseToAutorite;
     @Value("${wikibase.urls.cirrus-search}")
     private String itemSearch;
+    @Value("${wikibase.urls.property-detail}")
+    private String propertyValueUrl;
 
     @Test
     public void whenYamlFileProvided() {
@@ -93,6 +101,75 @@ class WikibasePropertiesTest {
                     System.out.println("Subscriber on thread: " + Thread.currentThread().getName());
                     System.out.println(v);
                     }, System.out::println, countDownLatch::countDown);
+
+        countDownLatch.await();
+    }
+
+    @Test
+    void findItemById() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        responseToAutorite.setItem("Q8");
+        Autorite autorite = null;
+        WikiDataPersonNotice wikiDataPersonNotice = new WikiDataPersonNotice();
+        try {
+            autorite = responseToAutorite.toObjectReactive();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assert autorite != null;
+        if (autorite.getPpn() != null) {
+            wikiDataPersonNotice.setPpn(autorite.getPpn());
+        }
+
+        Mono<Autorite> autoriteMono = Mono.just(autorite);
+
+        autoriteMono.flatMap(v -> Mono.just(v.getZones())).flatMapMany(Flux::fromIterable)
+                .map(v -> {
+                    if (v.getLabel() != null) {
+                        if(v.getLabel().equals("Nom")){
+                            wikiDataPersonNotice.setFirstName(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Prénom")){
+                            wikiDataPersonNotice.setLastName(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Date de naissance")){
+                            wikiDataPersonNotice.setDateBirth(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Date de naissance")){
+                            wikiDataPersonNotice.setDateBirth(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Date de décès")){
+                            wikiDataPersonNotice.setDateDead(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Date de décès")){
+                            wikiDataPersonNotice.setDateDead(v.getSubZones());
+                        }
+                        if(v.getLabel().equals("Source")){
+                            wikiDataPersonNotice.setSource(v.getSubZones());
+                        }
+                    }
+                    return Mono.empty();
+                })
+                .subscribe(System.out::println, System.out::println, countDownLatch::countDown);
+
+        countDownLatch.await();
+        System.out.println(wikiDataPersonNotice);
+    }
+
+    @Test
+    void getPropertyGuid() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        WebClient webClient = webClientBuilder.baseUrl(this.propertyValueUrl+"Q427").build();
+
+        webClient.get().uri(uriBuilder -> uriBuilder
+            .queryParam("property", "P6")
+            .build()
+            )
+            .retrieve()
+            .bodyToMono(JsonNode.class)
+            .flatMap(v -> Mono.just(v.findValue("P6").get(0).get("id").asText()))
+            .subscribe(System.out::println, System.out::println, countDownLatch::countDown);
 
         countDownLatch.await();
     }

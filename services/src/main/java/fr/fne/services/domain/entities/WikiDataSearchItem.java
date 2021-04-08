@@ -16,4 +16,5 @@ public class WikiDataSearchItem {
 
     private String title;
     private String snippet;
+
 }

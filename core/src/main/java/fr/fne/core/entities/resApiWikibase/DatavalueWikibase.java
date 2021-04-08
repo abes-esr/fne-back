@@ -25,6 +25,8 @@ public class DatavalueWikibase {
     private String type;
     private String id;
 
+
+
     @JsonSetter("value")
     public void setValueInternal(JsonNode valueInternal) {
 

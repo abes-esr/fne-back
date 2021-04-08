@@ -1,6 +1,5 @@
 package fr.fne.services.domain;
 
-import fr.fne.services.domain.entities.WikiDataSearchItem;
 import fr.fne.services.domain.entities.WikibaseCountries;
 import fr.fne.services.domain.entities.WikiDataPersonNotice;
 import fr.fne.services.domain.entities.WikibaseLangues;
@@ -13,6 +12,8 @@ public interface WikiDataServicePersonNotice {
 
     String getCsrfToken(String urlWikibase);
     Mono<WikiDataPersonNotice> save(WikiDataPersonNotice wikibaseItem) throws Exception;
+    Mono<WikiDataPersonNotice> update(WikiDataPersonNotice wikibaseItem) throws Exception;
     Flux<WikibaseLangues> findAllLangues();
     Flux<WikibaseCountries> findAllCountries();
+    Mono<WikiDataPersonNotice> findPersonNoticeByItemId(String ItemId);
 }
