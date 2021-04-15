@@ -26,7 +26,7 @@ public class DatavalueWikibase {
     private String id;
 
 
-
+    // c'est ici que l'on change les valeurs de time
     @JsonSetter("value")
     public void setValueInternal(JsonNode valueInternal) {
 

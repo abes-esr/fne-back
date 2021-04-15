@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = {"fr.fne.core", "fr.fne.services"})
 @Slf4j
-//@EnableScheduling
+@EnableScheduling
 @EnableAsync
 public class BackApplication {
 
