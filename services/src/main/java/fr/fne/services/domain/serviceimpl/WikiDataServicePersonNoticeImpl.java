@@ -631,7 +631,6 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
             .onErrorResume(v -> Mono.empty());
     }
 
-    //Todo
     private Mono<String> getPropertyGuid(String itemId, String propertyId) {
         String url = propertyDetail + itemId;
         WebClient webClient = webClientBuilder.baseUrl(url).build();
@@ -673,8 +672,14 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
                 date = "+"+time+"T00:00:00Z";
                 dataTime = new DataTime(date, 11);
             } else {
-                date = "+"+time+"-00-00T00:00:00Z";
-                dataTime = new DataTime(date, 9);
+                if (time.contains("X")) {
+                    time = time.replaceAll("X", "0");
+                    date = "+"+time+"-00-00T00:00:00Z";
+                    dataTime = new DataTime(date, 8);
+                } else {
+                    date = "+"+time+"-00-00T00:00:00Z";
+                    dataTime = new DataTime(date, 9);
+                }
             }
 //            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
 //            LocalDateTime now = LocalDateTime.parse(date);
@@ -749,12 +754,15 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
                 date = "+"+time+"T00:00:00Z";
                 dataTime = new DataTime(date, 11);
             } else {
-                date = "+"+time+"-00-00T00:00:00Z";
-                dataTime = new DataTime(date, 9);
+                if (time.contains("X")) {
+                    time = time.replaceAll("X", "0");
+                    date = "+"+time+"-00-00T00:00:00Z";
+                    dataTime = new DataTime(date, 8);
+                } else {
+                    date = "+"+time+"-00-00T00:00:00Z";
+                    dataTime = new DataTime(date, 9);
+                }
             }
-//            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("+yyyy-MM-dd'T'HH:mm:ss'Z'");
-//            LocalDateTime now = LocalDateTime.parse(date);
-
 
             ObjectMapper objectMapper = new ObjectMapper();
 
@@ -819,23 +827,36 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
     private String titlteConvert(WikiDataPersonNotice wikibaseItem) {
 
         StringBuilder title = new StringBuilder();
+        String dateBirthWithX = null;
+        String dateDeadWithX = null;
 
         title.append(wikibaseItem.getFirstName().strip());
         title.append(", ");
         title.append(wikibaseItem.getLastName().strip());
         if ( !Strings.isNullOrEmpty(wikibaseItem.getDateBirth())) {
             title.append(" (");
-            title.append(wikibaseItem.getDateBirth().strip(),0,4);
+            if(wikibaseItem.getDateBirth().contains("X")) {
+                dateBirthWithX = wikibaseItem.getDateBirth().replaceAll("X", ".");
+                title.append(dateBirthWithX.strip(),0,4);
+            } else {
+                title.append(wikibaseItem.getDateBirth().strip(),0,4);
+            }
+
             if ( !Strings.isNullOrEmpty(wikibaseItem.getDateDead()) ) {
-                title.append("-");
-                title.append(wikibaseItem.getDateDead().strip(),0,4);
+                if(wikibaseItem.getDateDead().contains("X")) {
+                    dateDeadWithX = wikibaseItem.getDateDead().replaceAll("X", ".");
+                    title.append("-");
+                    title.append(dateDeadWithX.strip(),0,4);
+                } else {
+                    title.append("-");
+                    title.append(wikibaseItem.getDateDead().strip(),0,4);
+                }
 
             } else {
                 title.append("-...");
             }
             title.append(")");
         }
-
 
         return title.toString();
     }

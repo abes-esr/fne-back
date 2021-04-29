@@ -10,4 +10,10 @@ class TestApplication {
     void contextLoads() {
     }
 
+    @Test
+    void indexOfX() {
+        String x = "19xx";
+        System.out.println(x.indexOf("x"));
+    }
+
 }

@@ -24,6 +24,7 @@ public class DatavalueWikibase {
 
     private String type;
     private String id;
+    private int timePrecision;
 
 
     // c'est ici que l'on change les valeurs de time
@@ -31,20 +32,21 @@ public class DatavalueWikibase {
     public void setValueInternal(JsonNode valueInternal) {
 
         if (valueInternal != null) {
-
-            if (valueInternal.findValue("time") != null) {
-                this.id = StringUtils.substringBetween(valueInternal
-                        .get("time").asText(), "+", "T")
-                        .replaceAll("-", "");
-                if (id.length() > 4 && id.substring(4, 8).equals("0000")) {
-                    this.id = this.id.substring(0, 4);
-                }
-            }
-            if (valueInternal.findValue("id") != null) {
-                this.id = valueInternal.get("id").asText();
-            }
             if (valueInternal.isTextual()) {
                 this.id = valueInternal.asText();
+            } else {
+                if (valueInternal.findValue("time") != null) {
+                    this.timePrecision = valueInternal.findValue("precision").asInt();
+                    this.id = StringUtils.substringBetween(valueInternal
+                            .get("time").asText(), "+", "T")
+                            .replaceAll("-", "");
+
+                    if (id.length() > 4 && id.startsWith("0000", 4)) {
+                        this.id = this.id.substring(0, 4);
+                    }
+                } else if (valueInternal.findValue("id") != null) {
+                    this.id = valueInternal.get("id").asText();
+                }
             }
         }
 

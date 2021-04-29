@@ -61,7 +61,17 @@ public class ResponseToAutorite {
                             zone.setLabel(v.getPropertyName());
                         }
                         zone.setZoneNumber(v.getZoneNumber());
-                        zone.setSubZones(v.getDatavalueWikibase().getId());
+                        if (v.getDatavalueWikibase().getTimePrecision() == 8) {
+                            zone.setSubZones(
+                                replaceLast(
+                                    v.getDatavalueWikibase().getId(),
+                                    "0",
+                                    "X"
+                                )
+                            );
+                        } else {
+                            zone.setSubZones(v.getDatavalueWikibase().getId());
+                        }
                         zone.setTag("##");
                         zones.add(zone);
                     } else {
@@ -178,10 +188,10 @@ public class ResponseToAutorite {
 
         zones.forEach(v -> {
             if (v.getZoneNumber().equals("103##$a")) {
-                stringBuilder.append(v.getSubZones(), 0, 4);
+                stringBuilder.append(replaceLast(v.getSubZones(), "X", "."), 0, 4);
             }
             if (v.getZoneNumber().equals("103##$b")) {
-                stringBuilder.append(v.getSubZones(), 0, 4);
+                stringBuilder.append(replaceLast(v.getSubZones(), "X", "."), 0, 4);
             }
         });
 
@@ -197,4 +207,7 @@ public class ResponseToAutorite {
         return zone;
     }
 
+    private static String replaceLast(String text, String regex, String replacement) {
+        return text.replaceFirst("(?s)"+regex+"(?!.*?"+regex+")", replacement);
+    }
 }
