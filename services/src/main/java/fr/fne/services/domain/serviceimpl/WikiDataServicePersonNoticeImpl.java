@@ -574,7 +574,18 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
                         LocalDate dateTime = LocalDate.parse(v.getDatavalueWikibase().getId(), formatter);
                         wikiDataPersonNotice.setDateBirth(dateTime.toString());
                     } else {
-                        wikiDataPersonNotice.setDateBirth(v.getDatavalueWikibase().getId());
+                        if(v.getDatavalueWikibase().getTimePrecision() == 8) {
+                            if (v.getDatavalueWikibase().getId().contains("000")) {
+                                wikiDataPersonNotice.setDateBirth(replaceLast(v.getDatavalueWikibase().getId(), "000", "XXX"));
+                            } else if(v.getDatavalueWikibase().getId().contains("00")) {
+                                wikiDataPersonNotice.setDateBirth(replaceLast(v.getDatavalueWikibase().getId(), "00", "XX"));
+                            } else if(v.getDatavalueWikibase().getId().contains("0")) {
+                                wikiDataPersonNotice.setDateBirth(replaceLast(v.getDatavalueWikibase().getId(), "0", "X"));
+                            }
+                        } else {
+                            wikiDataPersonNotice.setDateBirth(v.getDatavalueWikibase().getId());
+                        }
+
                     }
 
                 }
@@ -584,7 +595,17 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
                         LocalDate dateTime = LocalDate.parse(v.getDatavalueWikibase().getId(), formatter);
                         wikiDataPersonNotice.setDateDead(dateTime.toString());
                     } else {
-                        wikiDataPersonNotice.setDateDead(v.getDatavalueWikibase().getId());
+                        if(v.getDatavalueWikibase().getTimePrecision() == 8) {
+                            if (v.getDatavalueWikibase().getId().contains("000")) {
+                                wikiDataPersonNotice.setDateDead(replaceLast(v.getDatavalueWikibase().getId(), "000", "XXX"));
+                            } else if(v.getDatavalueWikibase().getId().contains("00")) {
+                                wikiDataPersonNotice.setDateDead(replaceLast(v.getDatavalueWikibase().getId(), "00", "XX"));
+                            } else if(v.getDatavalueWikibase().getId().contains("0")) {
+                                wikiDataPersonNotice.setDateDead(replaceLast(v.getDatavalueWikibase().getId(), "0", "X"));
+                            }
+                        } else {
+                            wikiDataPersonNotice.setDateDead(v.getDatavalueWikibase().getId());
+                        }
                     }
                 }
 
@@ -861,5 +882,7 @@ public class WikiDataServicePersonNoticeImpl implements WikiDataServicePersonNot
         return title.toString();
     }
 
-
+    private static String replaceLast(String text, String regex, String replacement) {
+        return text.replaceFirst("(?s)"+regex+"(?!.*?"+regex+")", replacement);
+    }
 }

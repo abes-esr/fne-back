@@ -62,13 +62,13 @@ public class ResponseToAutorite {
                         }
                         zone.setZoneNumber(v.getZoneNumber());
                         if (v.getDatavalueWikibase().getTimePrecision() == 8) {
-                            zone.setSubZones(
-                                replaceLast(
-                                    v.getDatavalueWikibase().getId(),
-                                    "0",
-                                    "X"
-                                )
-                            );
+                            if (v.getDatavalueWikibase().getId().contains("000")) {
+                                zone.setSubZones(replaceLast(v.getDatavalueWikibase().getId(),"000","XXX"));
+                            } else if (v.getDatavalueWikibase().getId().contains("00")) {
+                                zone.setSubZones(replaceLast(v.getDatavalueWikibase().getId(),"00","XX"));
+                            } else if (v.getDatavalueWikibase().getId().contains("0")) {
+                                zone.setSubZones(replaceLast(v.getDatavalueWikibase().getId(),"0","X"));
+                            }
                         } else {
                             zone.setSubZones(v.getDatavalueWikibase().getId());
                         }
@@ -188,10 +188,10 @@ public class ResponseToAutorite {
 
         zones.forEach(v -> {
             if (v.getZoneNumber().equals("103##$a")) {
-                stringBuilder.append(replaceLast(v.getSubZones(), "X", "."), 0, 4);
+                stringBuilder.append(v.getSubZones().replaceAll("X", "."), 0, 4);
             }
             if (v.getZoneNumber().equals("103##$b")) {
-                stringBuilder.append(replaceLast(v.getSubZones(), "X", "."), 0, 4);
+                stringBuilder.append(v.getSubZones().replaceAll("X", "."), 0, 4);
             }
         });
 
